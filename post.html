@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품발송</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: #ffffff;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .search-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 3px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .search-btn {
+      padding: 8px 15px;
+      background: linear-gradient(135deg, #FFD700, #B8860B, #DAA520);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #FFD700, #B8860B, #DAA520); /* Changed to gold */
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+
+    .btn.send {
+      background: #FEE500;
+      color: #000000;
+    }
+
+    .btn:disabled {
+      background: #cccccc !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .preview-container {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+  </style>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+  <div style="text-align: center; margin: 10px 0;">
+    <a href="index.html">
+      <img src="post.png" alt="로고" style="width: 150px;">
+    </a>
+  </div>
+
+  <form id="postForm">
+    <div class="search-group">
+      <div style="flex: 1; display: flex; gap: 8px;">
+        <div style="flex: 1;">
+          <label>■ 고객명</label>
+          <input type="text" id="customerName" required>
+        </div>
+        <div style="flex: 1;">
+          <label>■ 고객ID</label>
+          <input type="text" id="docId" readonly style="background: #f5f5f5;">
+        </div>
+      </div>
+      <button type="button" class="search-btn" style="margin-top: 23px;" onclick="searchByName()">검색</button>
+    </div>
+
+    <div class="search-group">
+      <div style="flex: 1; display: flex; gap: 8px;">
+        <div style="flex: 1;">
+          <label>■ 전화번호</label>
+          <input type="tel" id="phone" required pattern="[0-9\-]+" inputmode="tel">
+        </div>
+        <div style="flex: 1;">
+          <label>■ 배송예정일</label>
+          <input type="date" id="deliveryDate">
+        </div>
+      </div>
+      <button type="button" class="search-btn" style="margin-top: 23px;" onclick="searchByPhone()">검색</button>
+    </div>
+
+    <div class="form-group">
+      <label>■ 송장번호</label>
+      <input type="tel" id="trackingNumber" required pattern="[0-9]+" inputmode="tel">
+    </div>
+
+    <button type="submit" class="btn">송장번호 저장</button>
+
+    <div class="preview-container">
+      <h3 style="margin-bottom: 10px; font-size: 14px;">알림톡 미리보기</h3>
+      <div id="preview" style="font-size: 13px; white-space: pre-line; color: #333;"></div>
+    </div>
+
+    <button type="button" id="sendKakao" class="btn send" disabled>상품발송 알림톡</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AizaSyAxfXZ7fOgO4ZxffXp4fsAjAcTmMQrwuQ",
+      authDomain: "fitgirlviki.firebaseapp.com",
+      projectId: "fitgirlviki",
+      storageBucket: "fitgirlviki.firebasestorage.app",
+      messagingSenderId: "207468197936",
+      appId: "1:207468197936:web:70ea3baa845e403722555f5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let currentDocId = null;
+    let customerData = null;
+
+    function updatePreview() {
+      if (!customerData) return;
+
+      const trackingNumber = document.getElementById('trackingNumber').value || ' #{송장번호}';
+      const deliveryDate = document.getElementById('deliveryDate').value;
+      const formattedDate = deliveryDate ? new Date(deliveryDate).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      }) : ' #{배송예정일}';
+
+      const previewText = `상품발송안내
+
+      '핏걸비키' 배송시작 안내
+${customerData["01_고객명"]}님의 상품이 택배사로 전달되었습니다. (하트)
+
+■ 택배사: CJ대한통운
+■ 송장번호: ${trackingNumber}
+■ 배송예정일: ${formattedDate}`;
+
+      document.getElementById('preview').textContent = previewText;
+    }
+
+    document.getElementById('trackingNumber').addEventListener('input', updatePreview);
+    document.getElementById('deliveryDate').addEventListener('change', updatePreview);
+    document.getElementById('deliveryDate').addEventListener('input', updatePreview);
+
+
+    window.searchByName = async () => {
+      const name = document.getElementById('customerName').value;
+      if (!name) return;
+
+      try {
+        const productDocRef = doc(db, "AdminSettings", "productlist");
+        const productDocSnap = await getDoc(productDocRef);
+        const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+        let matches = [];
+
+        for (const colName of collections) {
+          const q = query(collection(db, colName), where("01_고객명", "==", name));
+          const querySnapshot = await getDocs(q);
+          matches = matches.concat(querySnapshot.docs);
+        }
+
+
+        if (matches.length === 0) {
+          alert('고객을 찾을 수 없습니다.');
+          return;
+        }
+
+        if (matches.length > 1) {
+          // Create popup content
+          const popupContent = matches.map(doc => {
+            const data = doc.data();
+            return `
+              <div class="customer-option" style="padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;" 
+                   onclick="selectCustomer('${doc.id}', '${data["01_고객명"]}', '${data["02_전화번호"]}')">
+                <div>ID: ${doc.id}</div>
+                <div>전화번호: ${data["02_전화번호"]}</div>
+              </div>
+            `;
+          }).join('');
+
+          // Show popup
+          const popup = document.createElement('div');
+          popup.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-width: 90%;
+            width: 400px;
+          `;
+          
+          popup.innerHTML = `
+            <h3 style="margin-bottom: 15px;">동일한 이름의 고객이 여러 명 있습니다.</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+              ${popupContent}
+            </div>
+          `;
+
+          // Add overlay
+          const overlay = document.createElement('div');
+          overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+          `;
+
+          document.body.appendChild(overlay);
+          document.body.appendChild(popup);
+
+          // Define selectCustomer function
+          window.selectCustomer = (docId, name, phone) => {
+            currentDocId = docId;
+            customerData = matches.find(m => m.id === docId).data();
+            document.getElementById('docId').value = docId;
+            document.getElementById('phone').value = phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+            document.getElementById('deliveryDate').value = customerData["09_배송예정일"] || '';
+            document.getElementById('sendKakao').disabled = false;
+            updatePreview();
+            
+            // Remove popup and overlay
+            document.body.removeChild(popup);
+            document.body.removeChild(overlay);
+          };
+
+        } else if (matches.length === 1) {
+          const data = matches[0].data();
+          currentDocId = matches[0].id;
+          customerData = data;
+          document.getElementById('docId').value = currentDocId;
+          const phoneNum = data["02_전화번호"];
+          document.getElementById('phone').value = phoneNum.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+          document.getElementById('deliveryDate').value = data["09_배송예정일"] || '';
+          document.getElementById('sendKakao').disabled = false;
+          updatePreview();
+        } else {
+          alert('전화번호 뒷자리를 입력하고 다시 검색해주세요.');
+        }
+      } catch (error) {
+        console.error("Error searching:", error);
+        alert('검색 중 오류가 발생했습니다.');
+      }
+    };
+
+    window.searchByPhone = async () => {
+      const phoneInput = document.getElementById('phone').value;
+      const phone = phoneInput.replace(/-/g, '');
+      if (!phone) return;
+
+      try {
+        const productDocRef = doc(db, "AdminSettings", "productlist");
+        const productDocSnap = await getDoc(productDocRef);
+        const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+        let match = null;
+
+        for (const colName of collections) {
+          const q = query(collection(db, colName), where("02_전화번호", "==", phone));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            match = querySnapshot.docs[0];
+            break;
+          }
+        }
+
+        if (match) {
+          const data = match.data();
+          currentDocId = match.id;
+          customerData = data;
+          document.getElementById('docId').value = currentDocId;
+          document.getElementById('customerName').value = data["01_고객명"];
+          document.getElementById('deliveryDate').value = data["09_배송예정일"] || '';
+          document.getElementById('sendKakao').disabled = false;
+          updatePreview();
+        } else {
+          alert('고객을 찾을 수 없습니다.');
+        }
+      } catch (error) {
+        console.error("Error searching:", error);
+        alert('검색 중 오류가 발생했습니다.');
+      }
+    };
+
+    document.getElementById('postForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentDocId || !customerData) {
+        alert('먼저 고객을 검색해주세요.');
+        return;
+      }
+
+      const trackingNumber = document.getElementById('trackingNumber').value;
+      try {
+        const productDocRef = doc(db, "AdminSettings", "productlist");
+        const productDocSnap = await getDoc(productDocRef);
+        const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+
+        let docRef;
+        let found = false;
+
+        for (const colName of collections) {
+          docRef = doc(db, colName, currentDocId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          throw new Error("Document not found in any collection");
+        }
+
+        const deliveryDate = document.getElementById('deliveryDate').value;
+        await updateDoc(docRef, {
+          "08_송장번호": trackingNumber,
+          "09_배송예정일": deliveryDate
+        });
+
+        // Update Excel with tracking number
+        const { updateExcelRow } = await import('./excel.js');
+        const deliveryDateFormatted = deliveryDate.replace(/-/g, '').slice(2);
+
+        await updateExcelRow(String(currentDocId), {
+          "송장번호": trackingNumber,
+          "배송예정일": deliveryDateFormatted
+        });
+
+
+        document.getElementById('sendKakao').disabled = false;
+        alert('송장번호가 저장되었습니다.');
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.textContent = '저장 완료';
+      } catch (error) {
+        console.error("Error updating tracking number:", error);
+        alert('저장 중 오류가 발생했습니다.');
+      }
+    });
+
+    document.getElementById('sendKakao').addEventListener('click', async () => {
+      if (!currentDocId || !customerData) {
+        alert('먼저 고객을 검색해주세요.');
+        return;
+      }
+
+      const trackingNumber = document.getElementById('trackingNumber').value;
+      if (!trackingNumber) {
+        alert('송장번호를 입력해주세요.');
+        return;
+      }
+
+      try {
+        const formattedDate = customerData["09_배송예정일"] ? new Date(customerData["09_배송예정일"]).toLocaleDateString('ko-KR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }) : '배송예정일 없음';
+
+        const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            'apikey': 'hqupt87di966drllinn2l96kb02hixeq',
+            'userid': 'fitgirlviki',
+            'senderkey': 'bf70d26201780aa1e02231f2b45c00a7f6421bbc',
+            'tpl_code': 'TZ_4570',
+            'sender': '01086871992',
+            'receiver_1': customerData["02_전화번호"],
+            'subject_1': '상품배송을 시작합니다.',
+            'message_1': `'핏걸비키' 배송시작 안내
+${customerData["01_고객명"]}님의 상품이 택배사로 전달되었습니다(하트)
+
+■ 택배사: CJ대한통운
+■ 송장번호: ${trackingNumber}
+■ 배송예정일: ${formattedDate}`,
+            'button_1': `{
+              "button": [
+                {
+                  "name": "배송 조회",
+                  "linkType": "WL",
+                  "linkTypeName": "웹링크",
+                  "linkMo": "https://www.cjlogistics.com/ko/tool/parcel/tracking"
+                }
+              ]
+            }`,
+            'failover': 'N'
+          })
+        });
+
+        const data = await response.json();
+        if (data.code === 0) {
+          const productDocRef = doc(db, "AdminSettings", "productlist");
+          const productDocSnap = await getDoc(productDocRef);
+          const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+
+          for (const colName of collections) {
+            const docRef = doc(db, colName, currentDocId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              const date = new Date();
+              const year = date.getFullYear().toString().slice(-2);
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hour = String(date.getHours()).padStart(2, '0');
+              const minute = String(date.getMinutes()).padStart(2, '0');
+              const period = date.getHours() >= 12 ? 'PM' : 'AM';
+              const currentTime = `${year}${month}${day}_${period} ${hour}:${minute}`;
+              await updateDoc(docRef, {
+                "10_알림톡.2_상품발송안내": currentTime
+              });
+              break;
+            }
+          }
+
+          // Update Excel row with Kakao message time
+          const { updateExcelRow } = await import('./excel.js');
+          try {
+            const date = new Date();
+            const year = date.getFullYear().toString().slice(-2);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const period = date.getHours() >= 12 ? 'PM' : 'AM';
+            const currentTime = `${year}${month}${day}_${period} ${hour}:${minute}`;
+
+            console.log(`✅ ${currentDocId}`);
+            console.log(`✅ 발송 알림톡 전송 완료 - ${currentTime}`);
+            await updateExcelRow(String(currentDocId), {
+              "송장번호": trackingNumber,
+              "상품발송알림톡": currentTime
+            });
+
+            alert('알림톡이 발송되었습니다.');
+            const kakaoButton = document.getElementById('sendKakao');
+            kakaoButton.disabled = true;
+            kakaoButton.textContent = '발송 완료';
+            kakaoButton.style.backgroundColor = '#cccccc';
+            kakaoButton.style.color = '#666666';
+          } catch (error) {
+            console.error('Excel 업데이트 오류:', error);
+            alert('알림톡은 발송되었지만 Excel 업데이트에 실패했습니다.');
+          }
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.error('알림톡 발송 오류:', error);
+        alert('알림톡 발송에 실패했습니다.');
+      }
+    });
+  </script>
+</body>
+
+</html>

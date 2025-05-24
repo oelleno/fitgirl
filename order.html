@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주문 입력</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: #ffffff;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 3px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 6px 0;
+      padding: 6px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 12px;
+    }
+
+    .horizontal-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .horizontal-group .form-group {
+      flex: 1;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(45deg, #B8860B, #DAA520);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+    .btn.send {
+      background: #FEE500;
+      color: #000000;
+    }
+
+    .btn:active {
+      background: #0056b3;
+    }
+
+    .btn:disabled {
+      background: #cccccc !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin: 10px 0;">
+    <a href="index.html">
+      <img src="logo_gold.png" alt="로고" style="width: 150px;">
+    </a>
+  </div>
+  <form id="orderForm">
+    <div class="horizontal-group">
+      <div class="form-group">
+        <label>■ 고객명</label>
+        <input type="text" id="customerName" required pattern="[가-힣]+" inputmode="text">
+      </div>
+
+      <div class="form-group">
+        <label>■ 전화번호</label>
+        <input type="tel" id="phone" required pattern="[0-9\-]+" placeholder="010-0000-0000" inputmode="tel">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>■ 쇼핑몰</label>
+      <div class="checkbox-group">
+        <label class="checkbox-item">
+          <input type="radio" name="shop" value="N" required> 스마트스토어
+        </label>
+        <label class="checkbox-item">
+          <input type="radio" name="shop" value="C"> 쿠팡
+        </label>
+        <label class="checkbox-item">
+          <input type="radio" name="shop" value="A"> 에이블리
+        </label>
+      </div>
+    </div>
+
+    <div class="horizontal-group">
+      <div class="form-group" style="flex: 1;">
+        <label>■ 귀걸이</label>
+        <select id="earrings" required>
+          <option value="">선택하세요</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="flex: 1;">
+        <label>■ 배송예정일</label>
+        <input type="date" id="deliveryDate" required>
+      </div>
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: center;">
+      <label style="margin: 0; width: 80px;">■ 팔찌</label>
+      <div style="display: flex; gap: 10px;">
+        <label class="checkbox-item" style="margin: 0; width: 60px;">
+          <input type="checkbox" name="bracelet" value="8라인"> 8라인
+        </label>
+        <label class="checkbox-item" style="margin: 0; width: 60px;">
+          <input type="checkbox" name="bracelet" value="6라인"> 6라인
+        </label>
+        <label class="checkbox-item" style="margin: 0; width: 60px;">
+          <input type="checkbox" name="bracelet" value="3라인"> 3라인
+        </label>
+        <label class="checkbox-item" style="margin: 0; width: 60px;">
+          <input type="checkbox" name="bracelet" value="2라인"> 2라인
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: center;">
+      <label style="margin: 0; width: 80px;">■ 반지</label>
+      <label class="checkbox-item" style="margin: 0; width: 60px;">
+        <input type="checkbox" name="ring" value="추가"> 추가
+      </label>
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: center;">
+      <label style="margin: 0; width: 80px;">■ 귀찌</label>
+      <label class="checkbox-item" style="margin: 0; width: 60px;">
+        <input type="checkbox" name="earclip" value="변경"> 변경
+      </label>
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: center;">
+      <label style="margin: 0; width: 80px;">■ 포토후기</label>
+      <label class="checkbox-item" style="margin: 0; width: 60px;">
+        <input type="checkbox" name="review" value="참여"> 참여
+      </label>
+    </div>
+
+    <button type="submit" class="btn" style="margin-bottom: 10px;">주문 저장</button>
+
+    <div class="preview-container" style="margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
+      <h3 style="margin-bottom: 10px; font-size: 14px;">알림톡 미리보기</h3>
+      <div id="preview" style="font-size: 13px; white-space: pre-line; color: #333;"></div>
+    </div>
+
+    <button type="button" id="sendKakao" class="btn send" style="background-color: #FEE500; color: #000000;">알림톡 발송</button>
+  </form>
+
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="kakao.js" type="module"></script>
+
+  <script type="module">
+    window.getFormattedProductName = function() {
+      const earringSelect = document.getElementById('earrings');
+      const selectedOption = earringSelect.options[earringSelect.selectedIndex].text;
+      const parts = [];
+
+      // 귀걸이 이름 처리
+      if (selectedOption !== "00. 팔찌") {
+        const earringName = selectedOption.split('. ')[1];
+        parts.push(earringName);
+
+        // 귀찌 변경 체크
+        if (document.querySelector('input[name="earclip"]').checked) {
+          parts[0] += "(귀찌변경)";
+        }
+      }
+
+      // 팔찌 체크된 것만 처리
+      const braceletTypes = ["8라인", "6라인", "3라인", "2라인"];
+      const checkedBracelets = braceletTypes
+        .filter(type => document.querySelector(`input[name="bracelet"][value="${type}"]`).checked)
+        .map(type => type.replace("라인", ""));
+
+      if (checkedBracelets.length > 0) {
+        parts.push(checkedBracelets.join("+") + "라인팔찌");
+      }
+
+      // 반지 체크된 경우
+      if (document.querySelector('input[name="ring"]').checked) {
+        parts.push("반지추가");
+      }
+
+      // 포토후기 체크된 경우
+      if (document.querySelector('input[name="review"]').checked) {
+        parts.push("포토후기참여");
+      }
+
+      return parts.join("/");
+    }
+
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+    import { getFirestore, doc, setDoc, collection, getDocs, getDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+    import { saveOrderAndUploadToExcel } from './excel.js';
+
+    const firebaseConfig = {
+      apiKey: "AizaSyAxfXZ7fOgO4ZxffXp4fsAjAcTmMQrwuQ",
+      authDomain: "fitgirlviki.firebaseapp.com",
+      projectId: "fitgirlviki",
+      storageBucket: "fitgirlviki.firebasestorage.app",
+      messagingSenderId: "207468197936",
+      appId: "1:207468197936:web:70ea3baa845e403722555f5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadEarringOptions() {
+        try {
+            const productDocRef = doc(db, "AdminSettings", "productlist");
+            const productDocSnap = await getDoc(productDocRef);
+            const earringSelect = document.getElementById('earrings');
+
+            if (productDocSnap.exists()) {
+                const earringData = productDocSnap.data().earing || {};
+                Object.entries(earringData).forEach(([id, name]) => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.text = name;
+                    earringSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error("귀걸이 옵션 로딩 오류:", error);
+        }
+    }
+
+    loadEarringOptions();
+
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const customerName = document.getElementById('customerName').value;
+      const phoneInput = document.getElementById('phone').value;
+      const phone = phoneInput.replace(/-/g, '');
+      const shop = document.querySelector('input[name="shop"]:checked').value;
+      const deliveryDate = document.getElementById('deliveryDate').value;
+      const earrings = document.getElementById('earrings').value;
+
+      const today = new Date();
+      const docId = window.docId;
+
+
+      const productName = getFormattedProductName();
+
+      const data = {
+        "01_고객명": customerName,
+        "02_전화번호": phone,
+        "03_주문상품": productName,
+        "04_귀찌": document.querySelector('input[name="earclip"]').checked ? "변경" : "",
+        "05_팔찌": {
+          "2라인": document.querySelector('input[name="bracelet"][value="2라인"]').checked,
+          "3라인": document.querySelector('input[name="bracelet"][value="3라인"]').checked,
+          "6라인": document.querySelector('input[name="bracelet"][value="6라인"]').checked,
+          "8라인": document.querySelector('input[name="bracelet"][value="8라인"]').checked
+        },
+        "06_반지": document.querySelector('input[name="ring"]').checked ? "추가" : "",
+        "07_포토후기": document.querySelector('input[name="review"]').checked ? "참여" : "",
+        "08_송장번호": "",
+        "09_배송예정일": deliveryDate,
+        "10_알림톡": {
+          "1_주문완료안내": "",
+          "2_상품발송안내": "",
+          "3_포토후기독려": "",
+          "4_리뷰체험단": ""
+        }
+      };
+
+      try {
+        // Create document ID in format: YYMMDD_ShopCode_Name
+        const today = new Date();
+        const dateStr = `${String(today.getFullYear()).slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
+        const earringSelect = document.getElementById('earrings');
+        const selectedOption = earringSelect.options[earringSelect.selectedIndex].text;
+        let baseDocId = `${dateStr}_${shop}_${customerName}`;
+        let docId = baseDocId;
+        let counter = 1;
+
+        // Check if document exists
+        while ((await getDoc(doc(db, selectedOption, docId))).exists()) {
+          docId = `${baseDocId}_${counter}`;
+          counter++;
+        }
+
+        // Store docId in window object for kakao.js
+        window.docId = docId;
+
+        await setDoc(doc(db, selectedOption, docId), {
+          ...data,
+          id: docId,
+          created_at: today.toISOString()
+        });
+
+        // Save to Excel
+        const orderData = {
+          orderId: docId,
+          customerName,
+          customerContact: phone,
+          shop,
+          earrings: selectedOption,
+          earclip: document.querySelector('input[name="earclip"]').checked ? "변경" : "",
+          bracelet8: document.querySelector('input[name="bracelet"][value="8라인"]').checked ? "O" : "",
+          bracelet6: document.querySelector('input[name="bracelet"][value="6라인"]').checked ? "O" : "",
+          bracelet3: document.querySelector('input[name="bracelet"][value="3라인"]').checked ? "O" : "",
+          bracelet2: document.querySelector('input[name="bracelet"][value="2라인"]').checked ? "O" : "",
+          ring: document.querySelector('input[name="ring"]').checked ? "추가" : "",
+          review: document.querySelector('input[name="review"]').checked ? "참여" : "",
+          deliveryDate,
+          orderDate: today.toISOString(),
+          alimtalkOrder: data["10_알림톡"]["1_주문완료안내"] || "",
+          alimtalkDelivery: "",
+          alimtalkReview: ""
+        };
+
+        // Update save button text after successful save
+        const saveButton = document.querySelector('button[type="submit"]');
+        saveButton.disabled = true;
+        saveButton.textContent = '저장 중...';
+
+        try {
+          // Remove alimtalk timestamp from initial save
+          const orderDataWithoutAlimtalk = {
+            ...orderData,
+            alimtalkOrder: "",
+          };
+          await saveOrderAndUploadToExcel(orderDataWithoutAlimtalk);
+          alert('주문이 저장되고 엑셀에 업로드되었습니다.');
+          saveButton.disabled = false;
+          saveButton.textContent = '저장 완료';
+        } catch (error) {
+          console.error('Excel 업로드 오류:', error);
+          alert('주문은 저장되었지만 엑셀 업로드에 실패했습니다.');
+          saveButton.disabled = false;
+          saveButton.textContent = '저장';
+        }
+      } catch (error) {
+        console.error('Error adding document: ', error);
+        alert('저장 중 오류가 발생했습니다.');
+      }
+    });
+
+  </script>
+</body>
+</html>

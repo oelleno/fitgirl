@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>반품배송비</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: #ffffff;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 10px;
+    }
+
+    .search-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 3px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .search-btn {
+      padding: 8px 15px;
+      background: linear-gradient(45deg, #B8860B, #DAA520);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #FEE500;
+      color: #000000;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+
+    .btn:disabled {
+      background: #cccccc !important;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .preview-container {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f9f9f9;
+    }
+  </style>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+  <div style="text-align: center; margin: 10px 0;">
+    <a href="index.html">
+      <img src="logo_gold.png" alt="로고" style="width: 150px;">
+    </a>
+  </div>
+
+  <form id="reviewForm">
+    <div class="search-group">
+      <div style="flex: 1; display: flex; gap: 8px;">
+        <div style="flex: 1;">
+          <label>■ 고객명</label>
+          <input type="text" id="customerName" required>
+        </div>
+        <div style="flex: 1;">
+          <label>■ 고객ID</label>
+          <input type="text" id="docId" readonly style="background: #f5f5f5;">
+        </div>
+      </div>
+      <button type="button" class="search-btn" style="margin-top: 23px;" onclick="searchByName()">검색</button>
+    </div>
+
+    <div class="preview-container">
+      <h3 style="margin-bottom: 10px; font-size: 14px;">알림톡 미리보기</h3>
+      <div id="preview" style="font-size: 13px; white-space: pre-line; color: #333;"></div>
+    </div>
+
+    <button type="button" id="sendKakao" class="btn" disabled>반품배송비 알림톡</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+    import { getFirestore, collection, query, where, getDocs, doc, updateDoc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+    
+    const firebaseConfig = {
+      apiKey: "AizaSyAxfXZ7fOgO4ZxffXp4fsAjAcTmMQrwuQ",
+      authDomain: "fitgirlviki.firebaseapp.com",
+      projectId: "fitgirlviki",
+      storageBucket: "fitgirlviki.firebasestorage.app",
+      messagingSenderId: "207468197936",
+      appId: "1:207468197936:web:70ea3baa845e403722555f5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    let currentDocId = null;
+    let customerData = null;
+
+    function updatePreview() {
+      if (!customerData) return;
+
+      const previewText = `안녕하세요. ${customerData["01_고객명"]}님.
+요청하신 반품진행 관련하여 안내드립니다.
+
+반품 시에는 초기 배송비 및 반품 배송비가 부과되며 배송비는 아래 계좌로 입금 부탁드립니다.
+
+▶ 은행명 : 카카오뱅크 
+▶ 계좌번호 : 3333-31-4730962
+▶ 예금주 : 핏걸비키
+▶ 반품배송비 : 6,000원
+
+입금후 아래 상담톡으로 "성함/입금완료" 라고 회신주시면, 신속히 반품 처리 도와드리겠습니다.
+감사합니다.`;
+
+      document.getElementById('preview').textContent = previewText;
+    }
+
+    const searchByName = async () => {
+      const name = document.getElementById('customerName').value;
+      if (!name) return;
+
+      try {
+        const productDocRef = doc(db, "AdminSettings", "productlist");
+        const productDocSnap = await getDoc(productDocRef);
+        const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+        let matches = [];
+
+        for (const colName of collections) {
+          const q = query(collection(db, colName), where("01_고객명", "==", name));
+          const querySnapshot = await getDocs(q);
+          matches = matches.concat(querySnapshot.docs);
+        }
+
+        if (matches.length === 0) {
+          alert('고객을 찾을 수 없습니다.');
+          return;
+        }
+
+        if (matches.length > 1) {
+          // Create popup content
+          const popupContent = matches.map(doc => {
+            const data = doc.data();
+            return `
+              <div class="customer-option" style="padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer;" 
+                   onclick="selectCustomer('${doc.id}', '${data["01_고객명"]}', '${data["02_전화번호"]}')">
+                <div>ID: ${doc.id}</div>
+                <div>전화번호: ${data["02_전화번호"]}</div>
+              </div>
+            `;
+          }).join('');
+
+          // Show popup
+          const popup = document.createElement('div');
+          popup.style.cssText = `
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-width: 90%;
+            width: 400px;
+          `;
+          
+          popup.innerHTML = `
+            <h3 style="margin-bottom: 15px;">동일한 이름의 고객이 여러 명 있습니다.</h3>
+            <div style="max-height: 300px; overflow-y: auto;">
+              ${popupContent}
+            </div>
+          `;
+
+          // Add overlay
+          const overlay = document.createElement('div');
+          overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+          `;
+
+          document.body.appendChild(overlay);
+          document.body.appendChild(popup);
+
+          // Define selectCustomer function
+          window.selectCustomer = (docId, name, phone) => {
+            currentDocId = docId;
+            customerData = matches.find(m => m.id === docId).data();
+            document.getElementById('docId').value = currentDocId;
+            document.getElementById('sendKakao').disabled = false;
+            updatePreview();
+            
+            // Remove popup and overlay
+            document.body.removeChild(popup);
+            document.body.removeChild(overlay);
+          };
+
+        } else if (matches.length === 1) {
+          const data = matches[0].data();
+          currentDocId = matches[0].id;
+          customerData = data;
+          document.getElementById('docId').value = currentDocId;
+          document.getElementById('sendKakao').disabled = false;
+          updatePreview();
+        }
+      } catch (error) {
+        console.error("Error searching:", error);
+        alert('검색 중 오류가 발생했습니다.');
+      }
+    };
+
+    window.searchByName = searchByName;
+
+    document.getElementById('sendKakao').addEventListener('click', async () => {
+      if (!currentDocId || !customerData) {
+        alert('먼저 고객을 검색해주세요.');
+        return;
+      }
+
+      try {
+        const response = await fetch('https://kakaoapi.aligo.in/akv10/alimtalk/send/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            'apikey': 'hqupt87di966drllinn2l96kb02hixeq',
+            'userid': 'fitgirlviki',
+            'senderkey': 'bf70d26201780aa1e02231f2b45c00a7f6421bbc',
+            'tpl_code': 'UA_1539',
+            'sender': '01086871992',
+            'receiver_1': customerData["02_전화번호"],
+            'subject_1': '포토후기독려',
+            'message_1': `안녕하세요. ${customerData["01_고객명"]}님.
+요청하신 반품진행 관련하여 안내드립니다.
+
+반품 시에는 초기 배송비 및 반품 배송비가 부과되며 배송비는 아래 계좌로 입금 부탁드립니다.
+
+▶ 은행명 : 카카오뱅크 
+▶ 계좌번호 : 3333-31-4730962
+▶ 예금주 : 핏걸비키
+▶ 배송비 : 6,000원
+
+입금후 아래 상담톡으로 "성함/입금완료" 라고 회신주시면, 신속히 반품 처리 도와드리겠습니다.
+감사합니다.`,
+            'button_1': `{
+              "button": [
+                {
+                  "name": "상담톡 바로가기",
+                  "linkType": "WL",
+                  "linkTypeName": "웹링크",
+                  "linkPc": "",
+                  "linkMo": "https://pf.kakao.com/_xgxfixbn/chat"
+                }
+              ]
+            }`,
+            'failover': 'N'
+          })
+        });
+
+        const data = await response.json();
+        if (data.code === 0) {
+          const productDocRef = doc(db, "AdminSettings", "productlist");
+          const productDocSnap = await getDoc(productDocRef);
+          const collections = productDocSnap.exists() ? Object.values(productDocSnap.data().earing || {}) : [];
+          
+          let docRef;
+          let found = false;
+          
+          for (const colName of collections) {
+            docRef = doc(db, colName, currentDocId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              found = true;
+              await updateDoc(docRef, {
+                "10_알림톡.3_포토후기독려": (() => {
+                  const date = new Date();
+                  const year = date.getFullYear().toString().slice(-2);
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const hour = String(date.getHours()).padStart(2, '0');
+                  const minute = String(date.getMinutes()).padStart(2, '0');
+                  const period = date.getHours() >= 12 ? 'PM' : 'AM';
+                  return `${year}${month}${day}_${period} ${hour}:${minute}`;
+                })()
+              });
+              break;
+            }
+          }
+          // Import saveOrderAndUploadToExcel function
+          const { saveOrderAndUploadToExcel } = await import('./excel.js');
+
+          // Update Excel row
+          const date = new Date();
+          const year = date.getFullYear().toString().slice(-2);
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hour = String(date.getHours()).padStart(2, '0');
+          const minute = String(date.getMinutes()).padStart(2, '0');
+          const period = date.getHours() >= 12 ? 'PM' : 'AM';
+          const currentTime = `${year}${month}${day}_${period} ${hour}:${minute}`;
+
+          try {
+            const { updateExcelRow } = await import('./excel.js');
+            await updateExcelRow(currentDocId, {
+              "포토후기알림톡": currentTime
+            });
+            alert('알림톡이 발송되었습니다.');
+            const kakaoButton = document.getElementById('sendKakao');
+            kakaoButton.disabled = true;
+            kakaoButton.textContent = '발송 완료';
+            kakaoButton.style.backgroundColor = '#cccccc';
+            kakaoButton.style.color = '#666666';
+          } catch (error) {
+            console.error('Excel 업데이트 오류:', error);
+            alert('알림톡은 발송되었지만 Excel 업데이트에 실패했습니다.');
+          }
+        } else {
+          throw new Error(data.message);
+        }
+      } catch (error) {
+        console.error('알림톡 발송 오류:', error);
+        alert('알림톡 발송에 실패했습니다.');
+      }
+    });
+  </script>
+</body>
+
+</html>

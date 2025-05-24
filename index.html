@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="logo_gold.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주문 관리 시스템</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background: #ffffff;
+      max-width: 430px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 50px;
+    }
+
+    .container {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .logo {
+      width: 200px;
+      margin: 20px 0;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #FFD700, #B8860B, #DAA520);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+      box-shadow: 0 2px 4px rgba(184, 134, 11, 0.5);
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img src="logo_gold.png" alt="로고" class="logo" onclick="window.location.reload();" style="cursor: pointer;">
+    <button class="btn" onclick="location.href='order.html'">주문완료</button>
+    <button class="btn" onclick="location.href='post.html'">상품발송</button>
+    <button class="btn" onclick="location.href='review.html'">포토후기</button>
+    <button class="btn" onclick="location.href='review-sns.html'">리뷰체험단</button>
+    <button class="btn" onclick="location.href='refund.html'">반품배송비</button>
+  </div>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js';
+  import { getFirestore } from 'https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AizaSyAxfXZ7fOgO4ZxffXp4fsAjAcTmMQrwuQ",
+    authDomain: "fitgirlviki.firebaseapp.com",
+    projectId: "fitgirlviki",
+    storageBucket: "fitgirlviki.firebasestorage.app",
+    messagingSenderId: "207468197936",
+    appId: "1:207468197936:web:70ea3baa845e403722555f5"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.app = app;
+  window.db = db;
+</script>
+</body>
+</html>
